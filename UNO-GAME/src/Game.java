@@ -2,16 +2,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
 public abstract class Game {
-    private int currentPlayer;
-    private String[] playerIds;
-    private UnoDeck deck;
-    private ArrayList<ArrayList<UnoCard>> playersHand;
-    private ArrayList<UnoCard> stockPile;
-    private UnoCard.Color validColor;
-    private UnoCard.Value validValue;
-    private boolean gameDirection;
 
-    public Game (String[] pids) throws Exception {
+    protected int currentPlayer;
+    protected String[] playerIds;
+    protected UnoDeck deck;
+    protected ArrayList<ArrayList<UnoCard>> playersHand;
+    protected ArrayList<UnoCard> stockPile;
+    protected UnoCard.Color validColor;
+    protected UnoCard.Value validValue;
+    protected boolean gameDirection;
+
+    public Game(String[] pids) throws Exception {
         deck = new UnoDeck();
         deck.shuffle();
         stockPile = new ArrayList<UnoCard>();
@@ -20,96 +21,33 @@ public abstract class Game {
         gameDirection = false;
         playersHand = new ArrayList<ArrayList<UnoCard>>();
 
-        for (int i =0; i < pids.length; i++) {
+        for (int i = 0; i < pids.length; i++) {
             ArrayList<UnoCard> hand = new ArrayList<UnoCard>(Arrays.asList(deck.drawCard(7)));
             playersHand.add(hand);
         }
 
+        // Initialize validColor and validValue with the first card drawn from the deck
+        UnoCard firstCard = deck.drawCard();
+        validColor = firstCard.getColor();
+        validValue = firstCard.getValue();
+
+        // Add the first card to the stock pile
+        stockPile.add(firstCard);
+
         printPlayer();
     }
+
 
     public void printPlayer () {
         System.out.print("Players: ");
         for (int i = 0; i < playerIds.length; i++)
             System.out.print(playerIds[i] + ", ");
     }
-    public void play (Game game) {
-        UnoCard card = null;
-        try {
-            card = deck.drawCard();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
 
-        validColor = card.getColor();
-        validValue = card.getValue();
 
-        if (card.getValue() == UnoCard.Value.SKIP) {
-            System.out.println(playerIds[currentPlayer] + " was skipped !!!");
+    public abstract void play(Game game);
 
-            if (gameDirection == false) {
-                currentPlayer = (currentPlayer + 1) % playerIds.length;
-            }else if (gameDirection == true) {
-                currentPlayer = (currentPlayer - 1) % playerIds.length;
-                if(currentPlayer == -1) {
-                    currentPlayer = playerIds.length - 1;
-                }
-            }
-        }
 
-        if (card.getValue() == UnoCard.Value.REVERSE){
-            System.out.println(playerIds[currentPlayer] + " the game direction changed !!!");
-            gameDirection ^= true;
-            currentPlayer = playerIds.length - 1;
-        }
-        stockPile.add(card);
-
-        Scanner scanner = new Scanner(System.in);
-        while (!game.isGameOver()) {
-
-            System.out.println("\n***************************************************************************");
-            System.out.println("Current Player: " + game.getCurrnetPlayer());
-            System.out.println("Top Card: " + game.getTopCard());
-            game.printPlayerHand(game.getCurrnetPlayer());
-            System.out.println("Enter the index of the card to play (0 to " + (game.getPlayerHandSize(game.getCurrnetPlayer()) - 1) + "): ");
-
-            int choice = scanner.nextInt();
-            UnoCard chosenCard = game.getPlayerCard(game.getCurrnetPlayer(), choice);
-
-            if (game.validCardPlay(chosenCard)) {
-
-                UnoCard.Color declaredColor = null;
-                if (chosenCard.getColor() == UnoCard.Color.WILD) {
-                    System.out.println("Enter the declared color for the Wild card (RED, BLUE, YELLOW, GREEN): ");
-                    String colorInput = scanner.next();
-                    declaredColor = UnoCard.Color.valueOf(colorInput.toUpperCase());
-                }
-
-                try {
-                    game.submitPlayerCard(game.getCurrnetPlayer(), chosenCard, declaredColor);
-                } catch (Exception e) {
-                    System.out.println(e.getMessage());
-                }
-            }else {
-                System.out.println("Invalid card play. Try again.");
-            }
-            try {
-                game.checkPlayerTurn(game.getCurrnetPlayer());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-            try {
-                System.out.println("press + to draw a card :) or 0 to finish your turn or any other button to replay");
-                String draw = scanner.next();
-                if (draw.equals("+")){
-                    game.submitDraws(game.getCurrnetPlayer());
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-        System.out.println("Game over! Winner: " + game.getCurrnetPlayer());
-    }
     public UnoCard getTopCard () {
         return new UnoCard(validColor, validValue);
     }
